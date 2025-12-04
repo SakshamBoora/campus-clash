@@ -36,47 +36,38 @@ export default async function ProfilePage() {
         ? Math.round((user.wins / (user.wins + user.losses)) * 100)
         : 0;
 
-    // Group bets by predictionId AND option
-    const groupedBetsMap = new Map();
+    // Group bets by predictionId ONLY
+    const groupedMap = new Map();
 
-    bets.forEach((bet: any) => {
-        const key = `${bet.predictionId}-${bet.option}`;
+    for (const bet of bets) {
+        const key = bet.predictionId;
 
-        if (!groupedBetsMap.has(key)) {
-            groupedBetsMap.set(key, {
+        if (!groupedMap.has(key)) {
+            groupedMap.set(key, {
                 key: key,
                 prediction: bet.prediction,
-                option: bet.option, // Single option per group
-                amount: 0,
-                quantity: 0,
-                createdAt: new Date(bet.createdAt), // Track latest bet time
-                status: "VALID", // Default
-                payout: 0
+                option: bet.option,
+                totalAmount: bet.amount,
+                latestDate: new Date(bet.createdAt),
+                status: bet.status,
+                payout: bet.payout || 0
             });
+        } else {
+            const group = groupedMap.get(key);
+
+            group.totalAmount += bet.amount;
+            group.payout += bet.payout || 0;
+
+            if (new Date(bet.createdAt) > group.latestDate) {
+                group.latestDate = new Date(bet.createdAt);
+            }
+
+            if (bet.status === "WON") group.status = "WON";
+            else if (bet.status === "LOST" && group.status !== "WON") group.status = "LOST";
         }
+    }
 
-        const group = groupedBetsMap.get(key);
-
-        // Aggregate
-        group.amount += bet.amount;
-        group.quantity += bet.amount / (bet.prediction.stakeAmount || 100);
-        group.payout += bet.payout || 0;
-
-        // Update latest date
-        if (new Date(bet.createdAt) > group.createdAt) {
-            group.createdAt = new Date(bet.createdAt);
-        }
-
-        // Status Priority: WON > LOST > VALID
-        // Since we group by option, usually status should be consistent, but we keep the logic
-        if (bet.status === "WON") {
-            group.status = "WON";
-        } else if (bet.status === "LOST" && group.status !== "WON") {
-            group.status = "LOST";
-        }
-    });
-
-    const groupedBets = Array.from(groupedBetsMap.values());
+    const groupedBets = Array.from(groupedMap.values());
 
     // Split into Current and Past
     const currentBets = groupedBets.filter((b: any) => b.status === "VALID");
@@ -143,7 +134,7 @@ export default async function ProfilePage() {
                                         <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
                                             <span className="flex items-center gap-1">
                                                 <Calendar size={14} />
-                                                {bet.createdAt.toLocaleDateString()}
+                                                {bet.latestDate.toLocaleDateString()}
                                             </span>
                                             <span className="px-2 py-0.5 rounded text-xs font-bold bg-zinc-700 text-zinc-300">
                                                 PENDING
@@ -158,14 +149,14 @@ export default async function ProfilePage() {
                                             </div>
                                             <div>
                                                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Total Stake</p>
-                                                <p className="text-white font-mono">₹{bet.amount.toLocaleString()}</p>
+                                                <p className="text-white font-mono">₹{bet.totalAmount.toLocaleString()}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-2 md:text-right bg-black/20 p-4 rounded-xl border border-white/5 min-w-[150px]">
                                         <div className="flex justify-between md:justify-end items-center gap-4">
                                             <span className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Quantity</span>
-                                            <span className="text-white font-mono font-bold">{Math.round(bet.quantity)}x</span>
+                                            <span className="text-white font-mono font-bold">{Math.round(bet.totalAmount / (bet.prediction.stakeAmount || 100))}x</span>
                                         </div>
                                     </div>
                                 </div>
@@ -199,7 +190,7 @@ export default async function ProfilePage() {
                 <div className="space-y-4">
                     {pastBets.length > 0 ? (
                         pastBets.map((bet: any) => {
-                            const profit = bet.status === "WON" ? (bet.payout - bet.amount) : -bet.amount;
+                            const profit = bet.status === "WON" ? (bet.payout - bet.totalAmount) : -bet.totalAmount;
                             return (
                                 <div key={bet.key} className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors opacity-80 hover:opacity-100">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -208,7 +199,7 @@ export default async function ProfilePage() {
                                             <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
                                                 <span className="flex items-center gap-1">
                                                     <Calendar size={14} />
-                                                    {bet.createdAt.toLocaleDateString()}
+                                                    {bet.latestDate.toLocaleDateString()}
                                                 </span>
                                                 <span className={`px-2 py-0.5 rounded text-xs font-bold ${bet.status === 'WON' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                                                     {bet.status}
@@ -223,7 +214,7 @@ export default async function ProfilePage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Total Stake</p>
-                                                    <p className="text-white font-mono">₹{bet.amount.toLocaleString()}</p>
+                                                    <p className="text-white font-mono">₹{bet.totalAmount.toLocaleString()}</p>
                                                 </div>
                                             </div>
                                         </div>
