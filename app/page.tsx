@@ -1,4 +1,5 @@
 import { BattleCard } from "@/components/BattleCard";
+import { PredictionGrid } from "@/components/PredictionGrid";
 import { CreateMarketButton } from "@/components/CreateMarketButton";
 import { getCurrentUser } from "@/lib/auth";
 import { Trophy } from "lucide-react";
@@ -151,21 +152,7 @@ export default async function Home() {
         </div>
 
         {/* THE GRID: Forces 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {predictions.map((bet) => (
-            <BattleCard
-              key={bet.id}
-              prediction={bet}
-              isLoggedIn={!!user}
-            />
-          ))}
-          {/* Empty State if no predictions */}
-          {predictions.length === 0 && (
-            <div className="col-span-full py-20 text-center border border-dashed border-zinc-200 dark:border-white/10 rounded-3xl bg-zinc-50 dark:bg-white/5">
-              <p className="text-zinc-500 font-mono">No active markets found. Be the first to create one!</p>
-            </div>
-          )}
-        </div>
+        <PredictionGrid predictions={predictions} isLoggedIn={!!user} />
       </section>
     </div>
   );

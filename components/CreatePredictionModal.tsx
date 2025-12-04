@@ -30,7 +30,6 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
     async function handleSubmit(formData: FormData) {
         setLoading(true);
         const title = formData.get("title") as string;
-        const description = formData.get("description") as string;
         const stake = formData.get("stake") as string;
         const optionA = formData.get("optionA") as string;
         const optionB = formData.get("optionB") as string;
@@ -45,7 +44,6 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
 
         const result = await createPrediction({
             title,
-            description,
             stake,
             optionA,
             optionB,
@@ -101,16 +99,6 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
                                         required
                                         placeholder="e.g. Will it rain tomorrow?"
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Description</label>
-                                    <textarea
-                                        name="description"
-                                        rows={3}
-                                        placeholder="Add some context..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors resize-none"
                                     />
                                 </div>
 

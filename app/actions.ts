@@ -89,7 +89,6 @@ export async function placeBet(predictionId: string, choice: "OPTION_A" | "OPTIO
 
 export async function createPrediction(data: {
     title: string;
-    description: string;
     stake: string;
     deadline: Date | null;
     optionA: string;
@@ -121,7 +120,7 @@ export async function createPrediction(data: {
         await prisma.prediction.create({
             data: {
                 title: data.title,
-                description: data.description,
+                description: "", // Default to empty string as requested
                 stakeAmount: stakeInt,
                 deadline: data.deadline,
                 optionA: data.optionA,
