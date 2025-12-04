@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { BattleCard } from "@/components/BattleCard";
-import { ArrowUpDown, Clock, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PredictionGridProps {
@@ -10,7 +10,7 @@ interface PredictionGridProps {
     isLoggedIn: boolean;
 }
 
-type SortOption = "newest" | "oldest" | "most_supported" | "least_supported" | "most_popular" | "least_popular";
+type SortOption = "most_supported" | "least_supported" | "most_popular" | "least_popular";
 
 export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps) {
     const [sortOption, setSortOption] = useState<SortOption>("most_popular");
@@ -35,12 +35,6 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
         };
 
         switch (sortOption) {
-            case "newest":
-                sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                break;
-            case "oldest":
-                sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-                break;
             case "most_supported":
                 // Sort by strongest consensus (highest gap)
                 sorted.sort((a, b) => getMetrics(b).supportGap - getMetrics(a).supportGap);
@@ -72,12 +66,10 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
                         onChange={(e) => setSortOption(e.target.value as SortOption)}
                         className="appearance-none bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 py-2 pl-4 pr-10 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                     >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="most_supported">Most Supported First</option>
-                        <option value="least_supported">Least Supported First</option>
                         <option value="most_popular">Most Popular First</option>
                         <option value="least_popular">Least Popular First</option>
+                        <option value="most_supported">Most Supported First</option>
+                        <option value="least_supported">Least Supported First</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
                         <ArrowUpDown size={14} />
