@@ -55,6 +55,7 @@ model Bet {
   amount       Int
   option       String     // "A" or "B"
   status       String     @default("VALID") // "VALID", "INVALID", "WON", "LOST"
+  payout       Int        @default(0)       // Realized return (stake + profit)
   userId       String
   predictionId String
   createdAt    DateTime   @default(now())

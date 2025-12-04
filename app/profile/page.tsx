@@ -49,7 +49,7 @@ export default async function ProfilePage() {
                 quantity: 0,
                 createdAt: new Date(bet.createdAt), // Track latest bet time
                 status: "VALID", // Default
-                winnings: 0
+                payout: 0
             });
         }
 
@@ -59,6 +59,7 @@ export default async function ProfilePage() {
         group.amount += bet.amount;
         group.quantity += bet.amount / (bet.prediction.stakeAmount || 100);
         group.options.add(bet.option);
+        group.payout += bet.payout || 0;
 
         // Update latest date
         if (new Date(bet.createdAt) > group.createdAt) {
@@ -66,11 +67,8 @@ export default async function ProfilePage() {
         }
 
         // Status Priority: WON > LOST > VALID
-        // If any bet in this group is WON, the whole group is WON (assuming single side betting rule)
-        // If any bet is LOST and none WON, it's LOST.
         if (bet.status === "WON") {
             group.status = "WON";
-            group.winnings += bet.amount * 2; // Simple 2x payout assumption from actions.ts
         } else if (bet.status === "LOST" && group.status !== "WON") {
             group.status = "LOST";
         }
@@ -191,7 +189,7 @@ export default async function ProfilePage() {
                 <div className="space-y-4">
                     {pastBets.length > 0 ? (
                         pastBets.map((bet: any) => {
-                            const profit = bet.status === "WON" ? (bet.winnings - bet.amount) : -bet.amount;
+                            const profit = bet.status === "WON" ? (bet.payout - bet.amount) : -bet.amount;
                             return (
                                 <div key={bet.key} className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors opacity-80 hover:opacity-100">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

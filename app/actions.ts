@@ -44,7 +44,7 @@ export async function placeBet(predictionId: string, choice: "OPTION_A" | "OPTIO
             if (existingBet.option !== newOption) {
                 return {
                     success: false,
-                    message: "You have already bet on the opposite side. You must continue with the same option."
+                    message: "You have already bet on the opposite outcome for this prediction."
                 };
             }
         }
@@ -157,6 +157,22 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
             },
         });
 
+        // Fetch all valid bets for calculation
+        const allBets = await prisma.bet.findMany({
+            where: {
+                predictionId,
+                createdAt: { lte: actualResultDate },
+                status: "VALID",
+            },
+        });
+
+        const winningOption = winner === "OPTION_A" ? "A" : "B";
+        const winningBets = allBets.filter(b => b.option === winningOption);
+        const losingBets = allBets.filter(b => b.option !== winningOption);
+
+        const totalWinningPool = winningBets.reduce((sum, b) => sum + b.amount, 0);
+        const totalLosingPool = losingBets.reduce((sum, b) => sum + b.amount, 0);
+
         await prisma.$transaction(async (tx: any) => {
             // 1. Refund late bets
             for (const bet of lateBets) {
@@ -170,43 +186,41 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
                 });
             }
 
-            // 2. Mark valid bets as WON/LOST
-            // Winners get 2x payout (Simple Logic)
-            const winningBets = await tx.bet.findMany({
-                where: {
-                    predictionId,
-                    createdAt: { lte: actualResultDate },
-                    option: winner === "OPTION_A" ? "A" : "B",
-                    status: "VALID",
-                },
-            });
-
+            // 2. Payout Winners (Pari-Mutuel Logic)
+            // Formula: Payout = Stake + (Stake / TotalWinningPool) * TotalLosingPool
             for (const bet of winningBets) {
+                const userShare = bet.amount / totalWinningPool;
+                const profit = userShare * totalLosingPool;
+                const payout = Math.floor(bet.amount + profit); // Floor to avoid float issues
+
                 await tx.user.update({
                     where: { id: bet.userId },
                     data: {
-                        balance: { increment: bet.amount * 2 },
+                        balance: { increment: payout },
                         wins: { increment: 1 }
                     },
                 });
                 await tx.bet.update({
                     where: { id: bet.id },
-                    data: { status: "WON" },
+                    data: {
+                        status: "WON",
+                        payout: payout
+                    },
                 });
             }
 
-            // Losers
+            // 3. Mark Losers
             await tx.bet.updateMany({
                 where: {
                     predictionId,
                     createdAt: { lte: actualResultDate },
-                    option: winner === "OPTION_A" ? "B" : "A",
+                    option: { not: winningOption },
                     status: "VALID",
                 },
-                data: { status: "LOST" },
+                data: { status: "LOST", payout: 0 },
             });
 
-            // Update Prediction Status
+            // 4. Update Prediction Status
             await tx.prediction.update({
                 where: { id: predictionId },
                 data: { status: "WON" }, // Or "SETTLED"
