@@ -10,10 +10,23 @@ export async function searchGlobal(query: string) {
     const [markets, users] = await Promise.all([
         prisma.prediction.findMany({
             where: {
-                OR: [
-                    { title: { contains: query, mode: "insensitive" } },
-                    { description: { contains: query, mode: "insensitive" } },
-                ],
+                AND: [
+                    {
+                        OR: [
+                            { title: { contains: query, mode: "insensitive" } },
+                            { description: { contains: query, mode: "insensitive" } },
+                        ],
+                    },
+                    {
+                        status: { in: ["PENDING", "ACTIVE"] },
+                    },
+                    {
+                        OR: [
+                            { deadline: { gt: new Date() } },
+                            { deadline: null }
+                        ]
+                    }
+                ]
             },
             take: 5,
             select: { id: true, title: true, poolA: true, poolB: true },

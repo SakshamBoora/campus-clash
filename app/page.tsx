@@ -20,7 +20,13 @@ export default async function Home() {
 
     // Fetch Predictions
     predictions = await prisma.prediction.findMany({
-      where: { status: "PENDING" },
+      where: {
+        status: { in: ["PENDING", "ACTIVE"] },
+        OR: [
+          { deadline: { gt: new Date() } },
+          { deadline: null }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
       include: { creator: true },
     });
