@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password      String
+  name          String?
+  balance       Int          @default(1000)
+  wins          Int          @default(0)
+  losses        Int          @default(0)
+  isAdmin       Boolean      @default(false)
+  isBanned      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  // This is the missing line that caused the error:
+  predictions   Prediction[] 
+  
+  bets          Bet[]
+}
+
+model Prediction {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  stakeAmount Int      @default(100)
+  deadline    DateTime?
+  
+  // These are the missing critical columns
+  status      String   @default("PENDING") // PENDING, WON, LOST
+  creatorId   String?
+  creator     User?    @relation(fields: [creatorId], references: [id])
+  
+  // These are the columns you already have
+  optionA     String   @default("Yes")
+  optionB     String   @default("No")
+  poolA       Int      @default(0)
+  poolB       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  bets        Bet[]
+}
+
+model Bet {
+  id           String     @id @default(uuid())
+  amount       Int
+  option       String     // "A" or "B"
+  status       String     @default("VALID") // "VALID", "INVALID", "WON", "LOST"
+  userId       String
+  predictionId String
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  prediction   Prediction @relation(fields: [predictionId], references: [id])
+}
