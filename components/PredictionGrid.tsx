@@ -10,13 +10,23 @@ interface PredictionGridProps {
     isLoggedIn: boolean;
 }
 
-type SortOption = "newest" | "oldest" | "most_liquidity" | "highest_yes" | "highest_no" | "sentiment_gap";
+type SortOption = "newest" | "oldest" | "most_supported" | "least_supported" | "most_popular" | "least_popular";
 
 export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps) {
     const [sortOption, setSortOption] = useState<SortOption>("newest");
 
     const sortedPredictions = useMemo(() => {
         const sorted = [...predictions];
+
+        const getSupport = (prediction: any) => {
+            const total = (prediction.poolA || 0) + (prediction.poolB || 0);
+            if (total === 0) return 0;
+            const percentA = (prediction.poolA / total) * 100;
+            const percentB = (prediction.poolB / total) * 100;
+            return Math.max(percentA, percentB);
+        };
+
+        const getTotalVolume = (prediction: any) => (prediction.poolA || 0) + (prediction.poolB || 0);
 
         switch (sortOption) {
             case "newest":
@@ -25,18 +35,19 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
             case "oldest":
                 sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                 break;
-            case "most_liquidity":
-                sorted.sort((a, b) => (b.poolA + b.poolB) - (a.poolA + a.poolB));
+            case "most_supported":
+                sorted.sort((a, b) => getSupport(b) - getSupport(a));
                 break;
-            case "highest_yes":
-                sorted.sort((a, b) => b.poolA - a.poolA);
+            case "least_supported":
+                // Closest to 50-50 means "least supported" in terms of dominance, or does user mean "lowest max support"?
+                // "Least Supported First → predictions closest to 50–50"
+                sorted.sort((a, b) => Math.abs(getSupport(a) - 50) - Math.abs(getSupport(b) - 50));
                 break;
-            case "highest_no":
-                sorted.sort((a, b) => b.poolB - a.poolB);
+            case "most_popular":
+                sorted.sort((a, b) => getTotalVolume(b) - getTotalVolume(a));
                 break;
-            case "sentiment_gap":
-                // Sort by absolute difference in pool size (controversial/decisive)
-                sorted.sort((a, b) => Math.abs(b.poolA - b.poolB) - Math.abs(a.poolA - a.poolB));
+            case "least_popular":
+                sorted.sort((a, b) => getTotalVolume(a) - getTotalVolume(b));
                 break;
         }
 
@@ -55,10 +66,10 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
                     >
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
-                        <option value="most_liquidity">Most Liquidity</option>
-                        <option value="highest_yes">Highest YES Pool</option>
-                        <option value="highest_no">Highest NO Pool</option>
-                        <option value="sentiment_gap">Highest Sentiment Gap</option>
+                        <option value="most_supported">Most Supported First</option>
+                        <option value="least_supported">Least Supported First</option>
+                        <option value="most_popular">Most Popular First</option>
+                        <option value="least_popular">Least Popular First</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
                         <ArrowUpDown size={14} />
