@@ -415,6 +415,21 @@ export async function registerUser(data: { name: string; email: string; password
             return { success: false, message: "User already exists." };
         }
 
+        // 1. Email Domain Check
+        if (!data.email.endsWith("@iimidr.ac.in")) {
+            return { success: false, message: "Only @iimidr.ac.in emails are allowed." };
+        }
+
+        // 2. Password Strength Check
+        // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char (@ $ ! % * # ? &)
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/;
+        if (!passwordRegex.test(data.password)) {
+            return {
+                success: false,
+                message: "Password must be 8+ characters and include uppercase, lowercase, number, and special character."
+            };
+        }
+
         const bcrypt = require("bcryptjs");
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
