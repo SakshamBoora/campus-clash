@@ -47,39 +47,39 @@ export default async function LeaderboardPage() {
                             return (
                                 <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <Link href={`/profile/${user.id}`} className="flex items-center w-full h-full">
+                                        <div className="flex items-center w-full h-full">
                                             {index === 0 && <Trophy className="text-yellow-400 mr-2" size={20} />}
                                             {index === 1 && <Medal className="text-gray-300 mr-2" size={20} />}
                                             {index === 2 && <Award className="text-amber-600 mr-2" size={20} />}
                                             <span className={`font-bold ${index < 3 ? 'text-white' : 'text-gray-500'}`}>
                                                 #{index + 1}
                                             </span>
-                                        </Link>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <Link href={`/profile/${user.id}`} className="flex items-center w-full h-full">
+                                        <div className="flex items-center w-full h-full">
                                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white mr-3">
                                                 {user.name?.[0] || "U"}
                                             </div>
-                                            <span className="font-medium text-white group-hover:text-purple-400 transition-colors">
+                                            <span className="font-medium text-white">
                                                 {user.name || "Anonymous"}
                                             </span>
-                                        </Link>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-green-400 font-bold">
-                                        <Link href={`/profile/${user.id}`} className="block w-full h-full">
+                                        <div className="block w-full h-full">
                                             {user.wins}
-                                        </Link>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-red-400">
-                                        <Link href={`/profile/${user.id}`} className="block w-full h-full">
+                                        <div className="block w-full h-full">
                                             {user.losses}
-                                        </Link>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-gray-300">
-                                        <Link href={`/profile/${user.id}`} className="block w-full h-full">
+                                        <div className="block w-full h-full">
                                             {winRate}%
-                                        </Link>
+                                        </div>
                                     </td>
                                 </tr>
                             );
