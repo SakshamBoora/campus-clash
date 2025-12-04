@@ -148,7 +148,10 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
         const { default: prisma } = await import("@/lib/prisma");
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user?.isAdmin) {
+
+        // Admin Check: Flag OR Email
+        const isAdmin = user?.isAdmin || user?.email === "i24sakshams@iimidr.ac.in";
+        if (!isAdmin) {
             throw new Error("Unauthorized: Admin access required.");
         }
 
@@ -161,8 +164,8 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
             },
         });
 
-        // Fetch all valid bets for calculation
-        const allBets = await prisma.bet.findMany({
+        // Fetch all valid bets created ON or BEFORE result time
+        const validBets = await prisma.bet.findMany({
             where: {
                 predictionId,
                 createdAt: { lte: actualResultDate },
@@ -171,14 +174,14 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
         });
 
         const winningOption = winner === "OPTION_A" ? "A" : "B";
-        const winningBets = allBets.filter(b => b.option === winningOption);
-        const losingBets = allBets.filter(b => b.option !== winningOption);
+        const winningBets = validBets.filter(b => b.option === winningOption);
+        const losingBets = validBets.filter(b => b.option !== winningOption);
 
         const totalWinningPool = winningBets.reduce((sum, b) => sum + b.amount, 0);
         const totalLosingPool = losingBets.reduce((sum, b) => sum + b.amount, 0);
 
         await prisma.$transaction(async (tx: any) => {
-            // 1. Refund late bets
+            // 1. Refund late bets (Mark INVALID)
             for (const bet of lateBets) {
                 await tx.user.update({
                     where: { id: bet.userId },
@@ -186,17 +189,39 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
                 });
                 await tx.bet.update({
                     where: { id: bet.id },
-                    data: { status: "INVALID" },
+                    data: { status: "INVALID", payout: 0 },
                 });
             }
 
-            // 2. Payout Winners (Pari-Mutuel Logic)
-            // Formula: Payout = Stake + (Stake / TotalWinningPool) * TotalLosingPool
-            // Winners receive their stake back plus a share of the losing pool.
+            // 2. Handle Scenario: NO WINNERS -> Refund Everyone (Mark VOID)
+            if (winningBets.length === 0) {
+                console.log("No winners found. Refunding all valid bets.");
+                for (const bet of validBets) {
+                    await tx.user.update({
+                        where: { id: bet.userId },
+                        data: { balance: { increment: bet.amount } },
+                    });
+                    await tx.bet.update({
+                        where: { id: bet.id },
+                        data: { status: "VOID", payout: 0 }, // Refunded amount is not "payout" profit, just return
+                    });
+                }
+
+                await tx.prediction.update({
+                    where: { id: predictionId },
+                    data: { status: "VOID" },
+                });
+                return; // Exit transaction
+            }
+
+            // 3. Payout Winners (Pari-Mutuel Logic)
+            // Formula: Share = floor((UserStake * LosingPool) / TotalWinningPool)
+            // Payout = UserStake + Share
             for (const bet of winningBets) {
-                const userShare = bet.amount / totalWinningPool;
-                const profit = Math.floor(userShare * totalLosingPool);
-                const payout = bet.amount + profit;
+                // Use BigInt for precision if needed, but standard JS numbers are safe for this range (2^53)
+                // We use Math.floor for integer arithmetic requirement
+                const share = Math.floor((bet.amount * totalLosingPool) / totalWinningPool);
+                const payout = bet.amount + share;
 
                 await tx.user.update({
                     where: { id: bet.userId },
@@ -214,7 +239,7 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
                 });
             }
 
-            // 3. Mark Losers
+            // 4. Mark Losers
             await tx.bet.updateMany({
                 where: {
                     predictionId,
@@ -225,20 +250,33 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
                 data: { status: "LOST", payout: 0 },
             });
 
-            // 4. Update Prediction Status
+            // Update Loser Stats (Optional but good for tracking)
+            for (const bet of losingBets) {
+                await tx.user.update({
+                    where: { id: bet.userId },
+                    data: { losses: { increment: 1 } }
+                });
+            }
+
+            // 5. Update Prediction Status
             await tx.prediction.update({
                 where: { id: predictionId },
-                data: { status: "WON" }, // Or "SETTLED"
+                data: { status: "WON" },
             });
         });
 
         revalidatePath("/");
         revalidatePath("/leaderboard");
         revalidatePath("/profile");
-        return { success: true, message: `Settled! ${lateBets.length} late bets refunded.` };
-    } catch (error) {
+
+        return {
+            success: true,
+            message: `Settled! Late Bets Refunded: ${lateBets.length}. Winners: ${winningBets.length}. Losers: ${losingBets.length}.`
+        };
+
+    } catch (error: any) {
         console.error("Settlement error:", error);
-        return { success: false, message: "Failed to settle prediction." };
+        return { success: false, message: `Failed to settle: ${error.message}` };
     }
 }
 
