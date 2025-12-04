@@ -187,11 +187,11 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
             }
 
             // 2. Payout Winners (Pari-Mutuel Logic)
-            // Formula: Payout = Stake + (Stake / TotalWinningPool) * TotalLosingPool
+            // Formula: Payout = (Stake / TotalWinningPool) * TotalLosingPool
+            // Winners do NOT get their stake back. They only get a share of the losing pool.
             for (const bet of winningBets) {
                 const userShare = bet.amount / totalWinningPool;
-                const profit = userShare * totalLosingPool;
-                const payout = Math.floor(bet.amount + profit); // Floor to avoid float issues
+                const payout = Math.floor(userShare * totalLosingPool); // Floor to avoid float issues
 
                 await tx.user.update({
                     where: { id: bet.userId },
@@ -466,5 +466,66 @@ export async function registerUser(data: { name: string; email: string; password
     } catch (error: any) {
         console.error("Registration error details:", error);
         return { success: false, message: `Registration failed: ${error.message}` };
+    }
+}
+
+export async function withdrawCredits(amount: number) {
+    try {
+        const cookieStore = await cookies();
+        const userId = cookieStore.get("campus_clash_session")?.value;
+        if (!userId) throw new Error("Unauthorized");
+
+        const { default: prisma } = await import("@/lib/prisma");
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error("User not found");
+
+        if (amount <= 0) {
+            return { success: false, message: "Invalid amount." };
+        }
+
+        if (user.balance < amount) {
+            return { success: false, message: "Insufficient balance." };
+        }
+
+        await prisma.$transaction(async (tx: any) => {
+            await tx.user.update({
+                where: { id: userId },
+                data: { balance: { decrement: amount } }
+            });
+
+            await tx.withdrawal.create({
+                data: {
+                    amount,
+                    userId,
+                    status: "COMPLETED" // Instant withdrawal for now
+                }
+            });
+        });
+
+        revalidatePath("/profile");
+        return { success: true, message: `Successfully withdrew ${amount} credits.` };
+    } catch (error) {
+        console.error("Withdrawal error:", error);
+        return { success: false, message: "Failed to withdraw credits." };
+    }
+}
+
+export async function getWithdrawals() {
+    try {
+        const cookieStore = await cookies();
+        const userId = cookieStore.get("campus_clash_session")?.value;
+        if (!userId) return [];
+
+        const { default: prisma } = await import("@/lib/prisma");
+
+        const withdrawals = await prisma.withdrawal.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return withdrawals;
+    } catch (error) {
+        return [];
     }
 }

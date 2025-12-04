@@ -1,10 +1,10 @@
 import { getCurrentUser } from "@/lib/auth";
-import { Trophy, TrendingDown, History, Target, Calendar, Coins, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Trophy, TrendingDown, History, Target, Calendar, Clock, Coins } from "lucide-react";
+import WithdrawalForm from "@/components/WithdrawalForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // ALWAYS fetch fresh data
-
 
 async function getUserStats(userId: string) {
     try {
@@ -177,6 +177,17 @@ export default async function ProfilePage() {
                             No active bets.
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* Withdrawal Section */}
+            <div className="mb-12">
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                    <Coins className="text-yellow-400" />
+                    Withdraw Credits
+                </h2>
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
+                    <WithdrawalForm balance={user.balance} />
                 </div>
             </div>
 

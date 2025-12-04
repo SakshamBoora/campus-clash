@@ -18,13 +18,22 @@ model User {
   losses        Int          @default(0)
   isAdmin       Boolean      @default(false)
   isBanned      Boolean      @default(false)
+  lastRefillDate DateTime    @default(now())
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   
-  // This is the missing line that caused the error:
   predictions   Prediction[] 
-  
   bets          Bet[]
+  withdrawals   Withdrawal[]
+}
+
+model Withdrawal {
+  id        String   @id @default(uuid())
+  amount    Int
+  status    String   @default("PENDING") // PENDING, COMPLETED, REJECTED
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Prediction {

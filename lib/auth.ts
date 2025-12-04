@@ -11,9 +11,27 @@ export async function getCurrentUser() {
 
     try {
         const { default: prisma } = await import("./prisma");
-        const user = await prisma.user.findUnique({
+        let user = await prisma.user.findUnique({
             where: { id: userId },
         });
+
+        if (!user) return null;
+
+        // Monthly Refill Logic (30 days = 2592000000 ms)
+        const now = new Date();
+        const lastRefill = new Date(user.lastRefillDate);
+        const timeDiff = now.getTime() - lastRefill.getTime();
+
+        if (timeDiff > 2592000000) {
+            user = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    balance: { increment: 5000 },
+                    lastRefillDate: now
+                }
+            });
+        }
+
         return user;
     } catch (error) {
         return null;
