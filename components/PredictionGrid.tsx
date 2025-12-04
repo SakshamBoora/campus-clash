@@ -13,20 +13,26 @@ interface PredictionGridProps {
 type SortOption = "newest" | "oldest" | "most_supported" | "least_supported" | "most_popular" | "least_popular";
 
 export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps) {
-    const [sortOption, setSortOption] = useState<SortOption>("newest");
+    const [sortOption, setSortOption] = useState<SortOption>("most_popular");
 
     const sortedPredictions = useMemo(() => {
         const sorted = [...predictions];
 
-        const getSupport = (prediction: any) => {
-            const total = (prediction.poolA || 0) + (prediction.poolB || 0);
-            if (total === 0) return 0;
-            const percentA = (prediction.poolA / total) * 100;
-            const percentB = (prediction.poolB / total) * 100;
-            return Math.max(percentA, percentB);
-        };
+        const getMetrics = (prediction: any) => {
+            const poolA = prediction.poolA || 0;
+            const poolB = prediction.poolB || 0;
+            const totalStake = poolA + poolB;
 
-        const getTotalVolume = (prediction: any) => (prediction.poolA || 0) + (prediction.poolB || 0);
+            if (totalStake === 0) {
+                return { supportGap: 0, totalStake: 0 };
+            }
+
+            const yesSupport = poolA / totalStake;
+            const noSupport = poolB / totalStake;
+            const supportGap = Math.abs(yesSupport - noSupport);
+
+            return { supportGap, totalStake };
+        };
 
         switch (sortOption) {
             case "newest":
@@ -36,18 +42,20 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
                 sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                 break;
             case "most_supported":
-                sorted.sort((a, b) => getSupport(b) - getSupport(a));
+                // Sort by strongest consensus (highest gap)
+                sorted.sort((a, b) => getMetrics(b).supportGap - getMetrics(a).supportGap);
                 break;
             case "least_supported":
-                // Closest to 50-50 means "least supported" in terms of dominance, or does user mean "lowest max support"?
-                // "Least Supported First → predictions closest to 50–50"
-                sorted.sort((a, b) => Math.abs(getSupport(a) - 50) - Math.abs(getSupport(b) - 50));
+                // Sort by closest to 50-50 (lowest gap)
+                sorted.sort((a, b) => getMetrics(a).supportGap - getMetrics(b).supportGap);
                 break;
             case "most_popular":
-                sorted.sort((a, b) => getTotalVolume(b) - getTotalVolume(a));
+                // Sort by highest total money staked
+                sorted.sort((a, b) => getMetrics(b).totalStake - getMetrics(a).totalStake);
                 break;
             case "least_popular":
-                sorted.sort((a, b) => getTotalVolume(a) - getTotalVolume(b));
+                // Sort by lowest total money staked
+                sorted.sort((a, b) => getMetrics(a).totalStake - getMetrics(b).totalStake);
                 break;
         }
 
