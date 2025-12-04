@@ -17,8 +17,10 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
     const poolB = prediction.poolB || 0;
     const totalPool = poolA + poolB;
 
-    // Prevent "NaN" (Divide by Zero) crash. Default to 50% if no bets.
-    const percentA = totalPool === 0 ? 50 : Math.round((poolA / totalPool) * 100);
+    // Calculate Odds (Multiplier)
+    // If pool is 0, default to 2x (1:1)
+    const oddsA = poolA === 0 ? 2.0 : (totalPool / poolA);
+    const oddsB = poolB === 0 ? 2.0 : (totalPool / poolB);
     // -------------------------------
 
     // --- 2. DEADLINE LOGIC ---
@@ -68,22 +70,23 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                     {prediction.title}
                 </h3>
 
-                <div className="flex items-baseline gap-3">
-                    <span className="text-6xl font-mono font-bold text-emerald-500 dark:text-emerald-400 drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]">
-                        {percentA}%
-                    </span>
-                    <span className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-2">
-                        CHANCE
-                    </span>
-                </div>
-
-                {/* Visual Bar for Pools */}
-                <div className="w-full h-1 mt-2 bg-zinc-200 dark:bg-white/10 rounded-full overflow-hidden flex">
-                    <div style={{ width: `${percentA}%` }} className="h-full bg-emerald-500 transition-all duration-500" />
-                </div>
-                <div className="flex justify-between mt-1 text-[10px] text-zinc-400 font-mono">
-                    <span>{prediction.optionA}: {poolA}</span>
-                    <span>{prediction.optionB}: {poolB}</span>
+                <div className="flex gap-4 mb-4">
+                    <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center">
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                            YES
+                        </span>
+                        <span className="text-2xl font-mono font-bold text-emerald-500 dark:text-emerald-400">
+                            {oddsA.toFixed(2)}×
+                        </span>
+                    </div>
+                    <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center">
+                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1">
+                            NO
+                        </span>
+                        <span className="text-2xl font-mono font-bold text-rose-500 dark:text-rose-400">
+                            {oddsB.toFixed(2)}×
+                        </span>
+                    </div>
                 </div>
             </div>
 
