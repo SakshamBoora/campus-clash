@@ -12,15 +12,26 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
     const stake = prediction.stakeAmount || 100;
     const { openAuthModal, openBetModal } = useModal();
 
-    // --- 1. REAL ODDS CALCULATION ---
+    // --- 1. POOL & SENTIMENT CALCULATION ---
     const poolA = prediction.poolA || 0;
     const poolB = prediction.poolB || 0;
     const totalPool = poolA + poolB;
 
-    // Calculate Odds (Multiplier)
-    // If pool is 0, default to 2x (1:1)
-    const oddsA = poolA === 0 ? 2.0 : (totalPool / poolA);
-    const oddsB = poolB === 0 ? 2.0 : (totalPool / poolB);
+    // Calculate Percentages
+    const percentA = totalPool === 0 ? 50 : Math.round((poolA / totalPool) * 100);
+    const percentB = totalPool === 0 ? 50 : Math.round((poolB / totalPool) * 100);
+
+    // Calculate Expected Payout for Tooltip
+    // Formula: payout = (opposingPool / supportingPool) * amountStaked + amountStaked
+    // If supportingPool = 0, treat as 1
+    const getExpectedPayout = (option: "A" | "B") => {
+        const supportingPool = option === "A" ? poolA : poolB;
+        const opposingPool = option === "A" ? poolB : poolA;
+        const safeSupportingPool = supportingPool === 0 ? 1 : supportingPool;
+
+        const profit = (opposingPool / safeSupportingPool) * stake;
+        return Math.floor(stake + profit);
+    };
     // -------------------------------
 
     // --- 2. DEADLINE LOGIC ---
@@ -46,7 +57,7 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
     return (
         <motion.div
             whileHover={{ y: -5, scale: 1.02 }}
-            className={`card-glass group relative flex flex-col h-[340px] rounded-3xl overflow-hidden transition-all duration-300 hover:border-emerald-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] bg-white/80 dark:bg-[#0a0a0a]/80 border-zinc-200 dark:border-white/10 ${isExpired ? 'opacity-75 grayscale' : ''}`}
+            className={`card-glass group relative flex flex-col h-[380px] rounded-3xl overflow-hidden transition-all duration-300 hover:border-emerald-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] bg-white/80 dark:bg-[#0a0a0a]/80 border-zinc-200 dark:border-white/10 ${isExpired ? 'opacity-75 grayscale' : ''}`}
         >
             {/* Top Banner */}
             <div className="h-24 bg-gradient-to-b from-emerald-500/10 to-transparent dark:from-emerald-900/20 p-6 relative z-10">
@@ -70,28 +81,50 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                     {prediction.title}
                 </h3>
 
+                {/* Sentiment & Pool Display */}
                 <div className="flex gap-4 mb-4">
-                    <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                    {/* YES Option */}
+                    <div className="flex-1 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative group/tooltip">
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
                             YES
                         </span>
-                        <span className="text-2xl font-mono font-bold text-emerald-500 dark:text-emerald-400 mb-1">
-                            {oddsA.toFixed(2)}×
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mb-1">
+                            ₹{poolA.toLocaleString()} staked
                         </span>
-                        <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-mono">
-                            {poolA.toLocaleString()} staked
+                        <span className="text-2xl font-mono font-bold text-emerald-500 dark:text-emerald-400">
+                            {percentA}%
                         </span>
+                        <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-mono mt-1">
+                            support
+                        </span>
+
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-zinc-900 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
+                            <p className="font-bold mb-1">Expected Payout</p>
+                            <p>If you stake ₹{stake}, expected payout ≈ <span className="text-emerald-400 font-mono">₹{getExpectedPayout("A").toLocaleString()}</span></p>
+                        </div>
                     </div>
-                    <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+
+                    {/* NO Option */}
+                    <div className="flex-1 bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative group/tooltip">
                         <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1">
                             NO
                         </span>
-                        <span className="text-2xl font-mono font-bold text-rose-500 dark:text-rose-400 mb-1">
-                            {oddsB.toFixed(2)}×
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mb-1">
+                            ₹{poolB.toLocaleString()} staked
                         </span>
-                        <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-mono">
-                            {poolB.toLocaleString()} staked
+                        <span className="text-2xl font-mono font-bold text-rose-500 dark:text-rose-400">
+                            {percentB}%
                         </span>
+                        <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-mono mt-1">
+                            support
+                        </span>
+
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-zinc-900 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
+                            <p className="font-bold mb-1">Expected Payout</p>
+                            <p>If you stake ₹{stake}, expected payout ≈ <span className="text-rose-400 font-mono">₹{getExpectedPayout("B").toLocaleString()}</span></p>
+                        </div>
                     </div>
                 </div>
             </div>
