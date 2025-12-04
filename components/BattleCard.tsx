@@ -71,20 +71,26 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                 </h3>
 
                 <div className="flex gap-4 mb-4">
-                    <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center">
+                    <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
                             YES
                         </span>
-                        <span className="text-2xl font-mono font-bold text-emerald-500 dark:text-emerald-400">
+                        <span className="text-2xl font-mono font-bold text-emerald-500 dark:text-emerald-400 mb-1">
                             {oddsA.toFixed(2)}×
                         </span>
+                        <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-mono">
+                            {poolA.toLocaleString()} staked
+                        </span>
                     </div>
-                    <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center">
+                    <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1">
                             NO
                         </span>
-                        <span className="text-2xl font-mono font-bold text-rose-500 dark:text-rose-400">
+                        <span className="text-2xl font-mono font-bold text-rose-500 dark:text-rose-400 mb-1">
                             {oddsB.toFixed(2)}×
+                        </span>
+                        <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-mono">
+                            {poolB.toLocaleString()} staked
                         </span>
                     </div>
                 </div>
