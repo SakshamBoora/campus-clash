@@ -13,6 +13,17 @@ export async function getCurrentUser() {
         const { default: prisma } = await import("./prisma");
         let user = await prisma.user.findUnique({
             where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                balance: true,
+                wins: true,
+                losses: true,
+                isAdmin: true,
+                isBanned: true,
+                lastRefillDate: true,
+            }
         });
 
         if (!user) return null;
@@ -28,6 +39,17 @@ export async function getCurrentUser() {
                 data: {
                     balance: { increment: 5000 },
                     lastRefillDate: now
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    balance: true,
+                    wins: true,
+                    losses: true,
+                    isAdmin: true,
+                    isBanned: true,
+                    lastRefillDate: true,
                 }
             });
         }

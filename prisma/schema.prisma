@@ -3,71 +3,65 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  password      String
-  name          String?
-  balance       Int          @default(1000)
-  wins          Int          @default(0)
-  losses        Int          @default(0)
-  isAdmin       Boolean      @default(false)
-  isBanned      Boolean      @default(false)
-  lastRefillDate DateTime    @default(now())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  
-  predictions   Prediction[] 
-  bets          Bet[]
-  withdrawals   Withdrawal[]
+  id             String       @id @default(uuid())
+  email          String       @unique
+  password       String
+  name           String?
+  balance        Int          @default(1000)
+  wins           Int          @default(0)
+  losses         Int          @default(0)
+  isAdmin        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isBanned       Boolean      @default(false)
+  lastRefillDate DateTime     @default(now())
+  bets           Bet[]
+  predictions    Prediction[]
+  withdrawals    Withdrawal[]
 }
 
 model Withdrawal {
   id        String   @id @default(uuid())
   amount    Int
-  status    String   @default("PENDING") // PENDING, COMPLETED, REJECTED
+  status    String   @default("PENDING")
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Prediction {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
-  stakeAmount Int      @default(100)
   deadline    DateTime?
-  
-  // These are the missing critical columns
-  status      String   @default("PENDING") // PENDING, WON, LOST
+  status      String    @default("PENDING")
   creatorId   String?
-  creator     User?    @relation(fields: [creatorId], references: [id])
-  
-  // These are the columns you already have
-  optionA     String   @default("Yes")
-  optionB     String   @default("No")
-  poolA       Int      @default(0)
-  poolB       Int      @default(0)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  optionA     String    @default("Yes")
+  optionB     String    @default("No")
+  poolA       Int       @default(0)
+  poolB       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  stakeAmount Int       @default(100)
   bets        Bet[]
+  creator     User?     @relation(fields: [creatorId], references: [id])
 }
 
 model Bet {
   id           String     @id @default(uuid())
   amount       Int
-  option       String     // "A" or "B"
-  status       String     @default("VALID") // "VALID", "INVALID", "WON", "LOST"
-  payout       Int        @default(0)       // Realized return (stake + profit)
+  option       String
+  status       String     @default("VALID")
   userId       String
   predictionId String
   createdAt    DateTime   @default(now())
-  user         User       @relation(fields: [userId], references: [id])
+  payout       Int        @default(0)
   prediction   Prediction @relation(fields: [predictionId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
 }
