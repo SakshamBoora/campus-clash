@@ -113,6 +113,11 @@ export async function createPrediction(data: {
             return { success: false, message: "Invalid stake amount." };
         }
 
+        // Validate Deadline (Must be in the future)
+        if (data.deadline && new Date(data.deadline) < new Date()) {
+            return { success: false, message: "Deadline cannot be in the past." };
+        }
+
         await prisma.prediction.create({
             data: {
                 title: data.title,

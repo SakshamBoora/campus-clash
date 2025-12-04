@@ -22,6 +22,11 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
         setMounted(true);
     }, []);
 
+    // Calculate min date (Current time + 1 hour)
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const minDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+
     async function handleSubmit(formData: FormData) {
         setLoading(true);
         const title = formData.get("title") as string;
@@ -30,6 +35,13 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
         const optionA = formData.get("optionA") as string;
         const optionB = formData.get("optionB") as string;
         const deadlineStr = formData.get("deadline") as string;
+
+        // Client-side validation
+        if (deadlineStr && new Date(deadlineStr) < new Date()) {
+            alert("Deadline cannot be in the past.");
+            setLoading(false);
+            return;
+        }
 
         const result = await createPrediction({
             title,
@@ -145,6 +157,7 @@ export default function CreatePredictionModal({ isOpen, onClose }: CreatePredict
                                         <input
                                             name="deadline"
                                             type="datetime-local"
+                                            min={minDateTime}
                                             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors [color-scheme:dark]"
                                         />
                                         <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
