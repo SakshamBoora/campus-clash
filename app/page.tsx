@@ -18,6 +18,16 @@ export default async function Home() {
 
     const { default: prisma } = await import("@/lib/prisma");
 
+    // SAFEGUARD: Automatically close expired predictions
+    // If a prediction is PENDING but the deadline has passed, mark it as CLOSED.
+    await prisma.prediction.updateMany({
+      where: {
+        status: "PENDING",
+        deadline: { lt: new Date() }
+      },
+      data: { status: "CLOSED" }
+    });
+
     // Fetch Predictions
     predictions = await prisma.prediction.findMany({
       where: {
