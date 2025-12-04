@@ -10,23 +10,10 @@ interface PredictionGridProps {
     isLoggedIn: boolean;
 }
 
-type SortOption = "newest" | "oldest" | "best_odds" | "worst_odds";
+type SortOption = "newest" | "oldest" | "most_liquidity" | "highest_yes" | "highest_no" | "sentiment_gap";
 
 export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps) {
     const [sortOption, setSortOption] = useState<SortOption>("newest");
-
-    const getMaxMultiplier = (prediction: any) => {
-        const poolA = prediction.poolA || 0;
-        const poolB = prediction.poolB || 0;
-        const totalPool = poolA + poolB;
-
-        if (poolA === 0 && poolB === 0) return 1.0;
-
-        const oddsA = poolA > 0 ? totalPool / poolA : 1.0;
-        const oddsB = poolB > 0 ? totalPool / poolB : 1.0;
-
-        return Math.max(oddsA, oddsB);
-    };
 
     const sortedPredictions = useMemo(() => {
         const sorted = [...predictions];
@@ -38,11 +25,18 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
             case "oldest":
                 sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                 break;
-            case "best_odds":
-                sorted.sort((a, b) => getMaxMultiplier(b) - getMaxMultiplier(a));
+            case "most_liquidity":
+                sorted.sort((a, b) => (b.poolA + b.poolB) - (a.poolA + a.poolB));
                 break;
-            case "worst_odds":
-                sorted.sort((a, b) => getMaxMultiplier(a) - getMaxMultiplier(b));
+            case "highest_yes":
+                sorted.sort((a, b) => b.poolA - a.poolA);
+                break;
+            case "highest_no":
+                sorted.sort((a, b) => b.poolB - a.poolB);
+                break;
+            case "sentiment_gap":
+                // Sort by absolute difference in pool size (controversial/decisive)
+                sorted.sort((a, b) => Math.abs(b.poolA - b.poolB) - Math.abs(a.poolA - a.poolB));
                 break;
         }
 
@@ -61,8 +55,10 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
                     >
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
-                        <option value="best_odds">Best Odds First</option>
-                        <option value="worst_odds">Worst Odds First</option>
+                        <option value="most_liquidity">Most Liquidity</option>
+                        <option value="highest_yes">Highest YES Pool</option>
+                        <option value="highest_no">Highest NO Pool</option>
+                        <option value="sentiment_gap">Highest Sentiment Gap</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
                         <ArrowUpDown size={14} />
