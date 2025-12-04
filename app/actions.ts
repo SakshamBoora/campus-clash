@@ -187,11 +187,12 @@ export async function settlePrediction(predictionId: string, winner: "OPTION_A" 
             }
 
             // 2. Payout Winners (Pari-Mutuel Logic)
-            // Formula: Payout = (Stake / TotalWinningPool) * TotalLosingPool
-            // Winners do NOT get their stake back. They only get a share of the losing pool.
+            // Formula: Payout = Stake + (Stake / TotalWinningPool) * TotalLosingPool
+            // Winners receive their stake back plus a share of the losing pool.
             for (const bet of winningBets) {
                 const userShare = bet.amount / totalWinningPool;
-                const payout = Math.floor(userShare * totalLosingPool); // Floor to avoid float issues
+                const profit = Math.floor(userShare * totalLosingPool);
+                const payout = bet.amount + profit;
 
                 await tx.user.update({
                     where: { id: bet.userId },
