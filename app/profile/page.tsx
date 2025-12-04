@@ -36,15 +36,17 @@ export default async function ProfilePage() {
         ? Math.round((user.wins / (user.wins + user.losses)) * 100)
         : 0;
 
-    // Group bets by predictionId
+    // Group bets by predictionId AND option
     const groupedBetsMap = new Map();
 
     bets.forEach((bet: any) => {
-        if (!groupedBetsMap.has(bet.predictionId)) {
-            groupedBetsMap.set(bet.predictionId, {
-                key: bet.predictionId,
+        const key = `${bet.predictionId}-${bet.option}`;
+
+        if (!groupedBetsMap.has(key)) {
+            groupedBetsMap.set(key, {
+                key: key,
                 prediction: bet.prediction,
-                options: new Set(),
+                option: bet.option, // Single option per group
                 amount: 0,
                 quantity: 0,
                 createdAt: new Date(bet.createdAt), // Track latest bet time
@@ -53,12 +55,11 @@ export default async function ProfilePage() {
             });
         }
 
-        const group = groupedBetsMap.get(bet.predictionId);
+        const group = groupedBetsMap.get(key);
 
         // Aggregate
         group.amount += bet.amount;
         group.quantity += bet.amount / (bet.prediction.stakeAmount || 100);
-        group.options.add(bet.option);
         group.payout += bet.payout || 0;
 
         // Update latest date
@@ -67,6 +68,7 @@ export default async function ProfilePage() {
         }
 
         // Status Priority: WON > LOST > VALID
+        // Since we group by option, usually status should be consistent, but we keep the logic
         if (bet.status === "WON") {
             group.status = "WON";
         } else if (bet.status === "LOST" && group.status !== "WON") {
@@ -74,10 +76,7 @@ export default async function ProfilePage() {
         }
     });
 
-    const groupedBets = Array.from(groupedBetsMap.values()).map((group: any) => ({
-        ...group,
-        options: Array.from(group.options) // Convert Set to Array
-    }));
+    const groupedBets = Array.from(groupedBetsMap.values());
 
     // Split into Current and Past
     const currentBets = groupedBets.filter((b: any) => b.status === "VALID");
@@ -153,8 +152,8 @@ export default async function ProfilePage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Your Option</p>
-                                                <p className={`font-bold ${bet.options.includes('A') ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {bet.options.map((opt: string) => opt === "A" ? bet.prediction.optionA : bet.prediction.optionB).join(", ")}
+                                                <p className={`font-bold ${bet.option === 'A' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {bet.option === "A" ? bet.prediction.optionA : bet.prediction.optionB}
                                                 </p>
                                             </div>
                                             <div>
@@ -218,8 +217,8 @@ export default async function ProfilePage() {
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Your Option</p>
-                                                    <p className="font-bold text-white">
-                                                        {bet.options.map((opt: string) => opt === "A" ? bet.prediction.optionA : bet.prediction.optionB).join(", ")}
+                                                    <p className={`font-bold ${bet.option === 'A' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {bet.option === "A" ? bet.prediction.optionA : bet.prediction.optionB}
                                                     </p>
                                                 </div>
                                                 <div>

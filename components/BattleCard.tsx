@@ -20,18 +20,6 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
     // Calculate Percentages
     const percentA = totalPool === 0 ? 50 : Math.round((poolA / totalPool) * 100);
     const percentB = totalPool === 0 ? 50 : Math.round((poolB / totalPool) * 100);
-
-    // Calculate Expected Payout for Tooltip
-    // Formula: payout = (opposingPool / supportingPool) * amountStaked + amountStaked
-    // If supportingPool = 0, treat as 1
-    const getExpectedPayout = (option: "A" | "B") => {
-        const supportingPool = option === "A" ? poolA : poolB;
-        const opposingPool = option === "A" ? poolB : poolA;
-        const safeSupportingPool = supportingPool === 0 ? 1 : supportingPool;
-
-        const profit = (opposingPool / safeSupportingPool) * stake;
-        return Math.floor(stake + profit);
-    };
     // -------------------------------
 
     // --- 2. DEADLINE LOGIC ---
@@ -84,7 +72,7 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                 {/* Sentiment & Pool Display */}
                 <div className="flex gap-4 mb-4">
                     {/* YES Option */}
-                    <div className="flex-1 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative group/tooltip">
+                    <div className="flex-1 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative">
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
                             YES
                         </span>
@@ -97,16 +85,10 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                         <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-mono mt-1">
                             support
                         </span>
-
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-zinc-900 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
-                            <p className="font-bold mb-1">Expected Payout</p>
-                            <p>If you stake ₹{stake}, expected payout ≈ <span className="text-emerald-400 font-mono">₹{getExpectedPayout("A").toLocaleString()}</span></p>
-                        </div>
                     </div>
 
                     {/* NO Option */}
-                    <div className="flex-1 bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative group/tooltip">
+                    <div className="flex-1 bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 flex flex-col items-center justify-center text-center relative">
                         <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1">
                             NO
                         </span>
@@ -119,12 +101,6 @@ export function BattleCard({ prediction, isLoggedIn }: BattleCardProps) {
                         <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-mono mt-1">
                             support
                         </span>
-
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-zinc-900 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
-                            <p className="font-bold mb-1">Expected Payout</p>
-                            <p>If you stake ₹{stake}, expected payout ≈ <span className="text-rose-400 font-mono">₹{getExpectedPayout("B").toLocaleString()}</span></p>
-                        </div>
                     </div>
                 </div>
             </div>
