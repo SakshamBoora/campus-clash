@@ -18,14 +18,14 @@ export function PredictionGrid({ predictions, isLoggedIn }: PredictionGridProps)
     const getMaxMultiplier = (prediction: any) => {
         const poolA = prediction.poolA || 0;
         const poolB = prediction.poolB || 0;
+        const totalPool = poolA + poolB;
 
-        if (poolA === 0 && poolB === 0) return 2.0; // Default 2x (1:1)
+        if (poolA === 0 && poolB === 0) return 1.0;
 
-        // Avoid division by zero
-        const multA = poolA === 0 ? 2.0 : (1 + poolB / poolA);
-        const multB = poolB === 0 ? 2.0 : (1 + poolA / poolB);
+        const oddsA = poolA > 0 ? totalPool / poolA : 1.0;
+        const oddsB = poolB > 0 ? totalPool / poolB : 1.0;
 
-        return Math.max(multA, multB);
+        return Math.max(oddsA, oddsB);
     };
 
     const sortedPredictions = useMemo(() => {
